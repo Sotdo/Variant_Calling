@@ -2,7 +2,7 @@ import re, glob, sys, os, subprocess, getopt, time
 
 def mkdir(*folders):
     for folder in folders:
-        subprocessRun('Make folder',folder ,'mkdir {0}'.format(folder))
+        subprocessRun('Make folder',folder ,'mkdir -p {0}'.format(folder))
 
 def cp(file, folder):
     subprocessRun('Copy files',file +" > "+ folder,'cp {0} {1}'.format(file,folder))
@@ -36,6 +36,15 @@ def subprocessRun(title,name,cmd):
 
 
 def prepare(project,reference,annotation,rawData,suffix):
+
+    print("args")
+    print("#"*70)
+    print("Project: " + project)
+    print("Reference: " + reference)
+    print("Annotation: " + annotation)
+    print("rawData: " + rawData)
+    print("suffix: " + suffix)
+    print("\n")
 
     fastp = "/home/suofang/Software/fastp-0.20.0/fastp"
     BWA = "/home/suofang/Software/bwa-0.7.17/bwa"
