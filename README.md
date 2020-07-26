@@ -6,12 +6,30 @@ In the whole genome sequencing analysis, variant calling is the process that fin
 
 Here we tried samtools/bcftools, GATK, Deepvaraint to analyze the sequencing data.
 
-## Materials and Methods
-### Variant Callers
+
+## Variant Callers
 | Caller | WebSite |
 | :- | :- |
 | Samtools/bcftools | http://www.htslib.org/ |
 | GATK | https://gatk.broadinstitute.org/hc/en-us |
 | Deepvariant | https://github.com/google/deepvariant |
 
-### 
+
+# Usage
+```shell
+Usage: python WGS_Analysis_Pipeline.py [options]
+
+    options:
+        -h/--help
+        -P/--project path to the project, such as /data/yangyusheng/projectName
+        -R/--reference path to the reference genome
+        -A/--annotation path to the annotation
+        -D/--data raw data, folder stores the raw data, like /data/yangyusheng/
+        -S/--suffix raw data suffix, the suffix of *.fastq is .fastq
+        -C/--caller Samtools, GATK, Deepvariant
+        -B/--BQSR
+```
+This script will create the folders with the following structure.
+```
+
+```

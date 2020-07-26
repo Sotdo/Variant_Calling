@@ -63,10 +63,10 @@ def BWA_MEM(ID,ref,in1,out):
     BWA = "/home/suofang/Software/bwa-0.7.17/bwa"
     cmd = "{0} mem \
                -R \'@RG\\tID:{1}\\tLB:lib1\\tPL:illumina\\tSM:{1}\\tPU:unit1\' \
-			   {2} \
-			   {3} \
-			   {4} \
-			   1> {5} \
+               {2} \
+               {3} \
+               {4} \
+               1> {5} \
                2> {6}".format(BWA,ID,ref,in1,in2,out,STR)
     subprocessRun("BWA MEM",in1,cmd)
 
@@ -85,7 +85,44 @@ def markduplicate(inputFile,outputFile):
                               M={3} \
                               CREATE_INDEX=true".format(Picard,inputFile,outputFile,mark_dup)
     subprocessRun("markduplicate",inputFile,cmd)
+    
+def IndexFeatureFile(inputFile):
+    GATK = "java -jar /home/suofang/Software/gatk-4.1.4.1/gatk-package-4.1.4.1-local.jar"
+    cmd = "{0} IndexFeatureFile \
+           -I {1}".format(GATK,inputFile)
+    subprocessRun("IndexFeatureFile",inputFile,cmd)
+    
+    
+def BaseRecalibrator(inputFile,outputFile,ref,knownSite):
+    GATK = "java -jar /home/suofang/Software/gatk-4.1.4.1/gatk-package-4.1.4.1-local.jar"
+    cmd = "{0} BaseRecalibrator \
+           -I {1} \
+           -R {2} \
+           --known-sites {3} \
+           -O {4}".format(GATK,inputFile,ref,knownSite,outputFile)
+    subprocessRun("BaseRecalibrator",inputFile,cmd)
+    
+def ApplyBQSR(inputFile,outputFile,ref,Base_Recal_table):
+    GATK = "java -jar /home/suofang/Software/gatk-4.1.4.1/gatk-package-4.1.4.1-local.jar"
+    cmd = "{0} ApplyBQSR \
+           -I {1} \
+           -R {2} \
+           -bqsr {3} \
+           --create-output-bam-index true \
+           -O {4}".format(GATK,inputFile,ref,Base_Recal_table,outputFile)
+    subprocessRun("ApplyBQSR",inputFile,cmd)
+    
+def ReorderSam(inputFile,outputFile,Ref):
+#     DICT = re.sub('\.[^\.]+','\.dict',Ref)
+    Picard = "java -jar /home/suofang/Software/picard_2.18.15.jar"
+    cmd = "{0} ReorderSam \
+          INPUT={1} \
+          OUTPUT={2} \
+          REFERENCE={3} \
+          CREATE_INDEX=true".format(Picard,inputFile,outputFile,Ref)
+    subprocessRun("ReorderSam",inputFile,cmd)
 
+    
 def bcftoolsCall(inputFile,outputFile,ref):
     bcftools = "/home/suofang/Software/bcftools-1.9/bcftools"
     cmd = "{0} mpileup -a FORMAT/DP4 -Ou -f {1} {2} |\
@@ -146,92 +183,52 @@ def Deepvariant(inputFile,outputFolder,reference):
     --output_gvcf=/output/{5}.bwa.Deepvariant.g.vcf'.format(inputFolder,outputFolder,BIN_VERSION,ref,file,ID)
     subprocessRun("Deepvariant",inputFile,cmd)
 
-def variantCalling(project,reference,annotation,rawData,suffix,callers):
-
-    print("args")
-    print("#"*70)
-    print("Project: " + project)
-    print("Reference: " + reference)
-    print("Annotation: " + annotation)
-    print("rawData: " + rawData)
-    print("suffix: " + suffix)
-    print("\n")
-
-    samples = glob.glob('{0}/*{1}'.format(rawData,suffix))
-
-    Fastp = "/home/suofang/Software/fastp-0.20.0/fastp"
-    BWA = "/home/suofang/Software/bwa-0.7.17/bwa"
-    samtools = "/home/suofang/Software/samtools-1.9/samtools"
-    bcftools = "/home/suofang/Software/bcftools-1.9/bcftools"
-    Picard = "java -jar /home/suofang/Software/picard_2.18.15.jar"
-    GATK = "java -jar /home/suofang/Software/gatk-4.1.4.1/gatk-package-4.1.4.1-local.jar"
-
-    print("Software used in this pipeline")
-    print("#"*70)
-    print(Fastp)
-    print(BWA)
-    print(samtools)
-    print(bcftools)
-    print(Picard)
-    print(GATK)
-    print("\n\n")
-    print("Procedure")
-    print("#"*70)
-    sys.stdout.flush()
+def variantCalling(project,reference,annotation,rawData,suffix,callers,BQSR):
 
     for i in samples:
         print(i)
 
         sys.stdout.flush()
 
-        # Get the ID
-        ID = filePath2ID(i)
-
         # Step1 - Quality Control of Sequencing
         # Software: fastp
-
-        inputFolder = rawData
-        outputFolder = "{0}/1_Files/1_Fastp".format(project)
-        mkdir(outputFolder)
-        in1 = i
-        out1 = re.sub(inputFolder,outputFolder,in1)
-        out1 = re.sub("_1\.[^\/\n\t\r\f]+",".fastp_1.fastq",out1)
-        fastp(in1,out1)
-
-        # Step2 - Mapping
-        # Software: BWA-MEM
-        inputFolder = outputFolder
-        outputFolder = "{0}/1_Files/2_BWA".format(project)
-        mkdir(outputFolder)
-        in1 = out1
-        out = re.sub('\.[^\/\n\t\r\f]+','.bwa.sam',in1)
-        out = re.sub(inputFolder,outputFolder,out)
-        BWA_MEM(ID,reference,in1,out)
-
-        # Step3 - Process SAM
-        # Software: samtools + Picard
-        inputFolder = outputFolder
-        outputFolder = "{0}/1_Files/3_ProcessedBAM".format(project)
-        mkdir(outputFolder)
-        inputFile = out
-        outputFile = re.sub('\.[^\/\n\t\r\f]+','.bwa.srt.bam',inputFile)
-        outputFile = re.sub(inputFolder,outputFolder,outputFile)
-        samtoolsSort(inputFile,outputFile)
-        inputFile = outputFile
-        outputFile = re.sub('\.[^\/\n\t\r\f]+','.bwa.srt.mark_dup.bam',inputFile)
-        markduplicate(inputFile,outputFile)
+        BQSRFile = re.sub('\.[^\/\n\t\r\f]+','.Known.vcf',i)
+        BQSRFile = re.sub(rawData,BQSR,BQSRFile)
+        IndexFeatureFile(BQSRFile)
 
         # Step4 - Call Variants
         # Software: bcftools/GATK/Deepvariant
 
-        inputFolder = outputFolder
+        inputFolder = rawData
+        inputFile = i
+        outputFolder = "{0}/1_Files/6_BaseRecalibration".format(project)
+        mkdir(outputFolder)
+        outputFile = re.sub('\.[^\/\n\t\r\f]+','.BaseRecalibrated.table',inputFile)
+        outputFile = re.sub(inputFolder,outputFolder,outputFile)
+        BaseRecalibrator(inputFile,outputFile,reference,BQSRFile)
+        
         inputFile = outputFile
+        inputFolder = outputFolder
+        outputFolder = "{0}/1_Files/6_BaseRecalibration".format(project)
+        mkdir(outputFolder)
+        outputFile = re.sub('\.[^\/\n\t\r\f]+','.BaseRecalibrated.bam',inputFile)
+        outputFile = re.sub(inputFolder,outputFolder,outputFile)
+        ApplyBQSR(i,outputFile,reference,inputFile)
+        
+        inputFile = outputFile
+        inputFolder = outputFolder
+        outputFolder = "{0}/1_Files/6_BaseRecalibration".format(project)
+        mkdir(outputFolder)
+        outputFile = re.sub('\.[^\/\n\t\r\f]+','.BaseRecalibrated.Reordered.bam',inputFile)
+        outputFile = re.sub(inputFolder,outputFolder,outputFile)
+        ReorderSam(inputFile,outputFile,reference)
+        
 
         for j in callers:
 
             if j == "Samtools":
                 # bcftools
-                outputFolder = "{0}/1_Files/4_Variants_Samtools".format(project)
+                outputFolder = "{0}/1_Files/7_Variants_Samtools".format(project)
                 mkdir(outputFolder)
                 outputFile = re.sub('\.[^\/\n\t\r\f]+','.bwa.Samtools.vcf',inputFile)
                 outputFile = re.sub(inputFolder,outputFolder,outputFile)
@@ -239,7 +236,7 @@ def variantCalling(project,reference,annotation,rawData,suffix,callers):
 
             elif j == "GATK":
                 #GATK
-                outputFolder = "{0}/1_Files/4_Variants_GATK".format(project)
+                outputFolder = "{0}/1_Files/7_Variants_GATK".format(project)
                 mkdir(outputFolder)
                 outputFile = re.sub('\.[^\/\n\t\r\f]+','.bwa.GATK.vcf',inputFile)
                 outputFile = re.sub(inputFolder,outputFolder,outputFile)
@@ -247,15 +244,16 @@ def variantCalling(project,reference,annotation,rawData,suffix,callers):
 
             elif j == "GATK_GVCF":
                 #GATK_GVCF
-                outputFolder = "{0}/1_Files/4_Variants_GATK_GVCF".format(project)
+                outputFolder = "{0}/1_Files/7_Variants_GATK_GVCF".format(project)
                 mkdir(outputFolder)
                 outputFile = re.sub('\.[^\/\n\t\r\f]+','.bwa.GATK.g.vcf',inputFile)
                 outputFile = re.sub(inputFolder,outputFolder,outputFile)
                 HaplotypeCaller_GVCF(inputFile,outputFile,reference)
+                
 
             elif j == "Deepvariant":
                 #Deepvariant
-                outputFolder = "{0}/1_Files/4_Variants_Deepvariant".format(project)
+                outputFolder = "{0}/1_Files/7_Variants_Deepvariant".format(project)
                 mkdir(outputFolder)
                 Deepvariant(inputFile,outputFolder,reference)
 
@@ -278,7 +276,7 @@ def main(argv):
     '''
 
     try:
-        opts, args = getopt.getopt(argv,"hP:R:A:D:S:C:",["help","project=","reference=","annotation=","rawData=","suffix=","caller="])
+        opts, args = getopt.getopt(argv,"hP:R:A:D:S:C:B:",["help","project=","reference=","annotation=","rawData=","suffix=","caller=","BQSR="])
     except getopt.GetoptError:
         print(usage)
         sys.exit(2)
@@ -288,6 +286,7 @@ def main(argv):
     annotation = ""
     rawData = ""
     suffix = ""
+    BQSR = ""
     callers = []
     for opt, arg in opts:
         if opt == "-h" or opt == "--help":
@@ -304,7 +303,10 @@ def main(argv):
             suffix = arg
         elif opt == "-C" or opt == "--caller":
             callers.append(arg)
-    variantCalling(project,reference,annotation,rawData,suffix,callers)
+        elif opt == "-B" or opt == "--BQSR":
+            BQSR = arg
+    variantCalling(project,reference,annotation,rawData,suffix,callers,BQSR)
 
 if __name__ == "__main__":
     main(sys.argv[1:])
+

@@ -185,47 +185,9 @@ def variantCalling(project,reference,annotation,rawData,suffix,callers):
         sys.stdout.flush()
 
         # Get the ID
-        ID = filePath2ID(i)
-
-        # Step1 - Quality Control of Sequencing
-        # Software: fastp
 
         inputFolder = rawData
-        outputFolder = "{0}/1_Files/1_Fastp".format(project)
-        mkdir(outputFolder)
-        in1 = i
-        out1 = re.sub(inputFolder,outputFolder,in1)
-        out1 = re.sub("_1\.[^\/\n\t\r\f]+",".fastp_1.fastq",out1)
-        fastp(in1,out1)
-
-        # Step2 - Mapping
-        # Software: BWA-MEM
-        inputFolder = outputFolder
-        outputFolder = "{0}/1_Files/2_BWA".format(project)
-        mkdir(outputFolder)
-        in1 = out1
-        out = re.sub('\.[^\/\n\t\r\f]+','.bwa.sam',in1)
-        out = re.sub(inputFolder,outputFolder,out)
-        BWA_MEM(ID,reference,in1,out)
-
-        # Step3 - Process SAM
-        # Software: samtools + Picard
-        inputFolder = outputFolder
-        outputFolder = "{0}/1_Files/3_ProcessedBAM".format(project)
-        mkdir(outputFolder)
-        inputFile = out
-        outputFile = re.sub('\.[^\/\n\t\r\f]+','.bwa.srt.bam',inputFile)
-        outputFile = re.sub(inputFolder,outputFolder,outputFile)
-        samtoolsSort(inputFile,outputFile)
-        inputFile = outputFile
-        outputFile = re.sub('\.[^\/\n\t\r\f]+','.bwa.srt.mark_dup.bam',inputFile)
-        markduplicate(inputFile,outputFile)
-
-        # Step4 - Call Variants
-        # Software: bcftools/GATK/Deepvariant
-
-        inputFolder = outputFolder
-        inputFile = outputFile
+        inputFile = i
 
         for j in callers:
 
