@@ -31,5 +31,36 @@ Usage: python WGS_Analysis_Pipeline.py [options]
 ```
 This script will create the folders with the following structure.
 ```
-
+./
+├── 0_Preparation
+│   ├── pombe_ASM294v1_18_toplevel.dict
+│   ├── pombe_ASM294v1_18_toplevel.fa
+│   ├── pombe_ASM294v1_18_toplevel.fa.amb
+│   ├── pombe_ASM294v1_18_toplevel.fa.ann
+│   ├── pombe_ASM294v1_18_toplevel.fa.bwt
+│   ├── pombe_ASM294v1_18_toplevel.fa.fai
+│   ├── pombe_ASM294v1_18_toplevel.fa.pac
+│   ├── pombe_ASM294v1_18_toplevel.fa.sa
+│   └── Schizosaccharomyces_pombe.ASM294v1.18_noSPBC3F6.03.gtf
+├── 1_Files
+│   ├── 0_RawData
+│   │   ├── NSK-0912-176_AK9183-N505_1.fastq
+│   │   └── NSK-0912-176_AK9183-N505_2.fastq
+│   ├── 1_Fastp
+│   │   ├── NSK-0912-176_AK9183-N505_1.fastp.fastq
+│   │   ├── NSK-0912-176_AK9183-N505_2.fastp.fastq
+│   │   ├── NSK-0912-176_AK9183-N505.html
+│   │   └── NSK-0912-176_AK9183-N505.json
+│   ├── 2_BWA
+│   │   ├── NSK-0912-176_AK9183-N505
+│   │   └── NSK-0912-176_AK9183-N505.bwa.sam
+│   ├── 3_ProcessedBAM
+│   │   ├── NSK-0912-176_AK9183-N505.bwa.srt.bam
+│   │   ├── NSK-0912-176_AK9183-N505.bwa.srt.mark_dup.bai
+│   │   ├── NSK-0912-176_AK9183-N505.bwa.srt.mark_dup.bam
+│   │   └── NSK-0912-176_AK9183-N505.marked_dup_metrics.txt
+│   └── 4_Variants_Samtools
+│       └── NSK-0912-176_AK9183-N505.Samtools.vcf
+├── 2_Summary
+└── scripts
 ```
